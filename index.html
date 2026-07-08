@@ -88,22 +88,6 @@
     background: var(--input-bg); color: var(--fg);
   }
 
-  .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
-  .tab-btn {
-    padding: 8px 16px;
-    border: 1px solid var(--fg);
-    background: var(--bg);
-    color: var(--fg);
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 4px;
-  }
-  .tab-btn.active { background: var(--fg); color: var(--bg); }
-
-  .day-panel { display: none; }
-  .day-panel.active { display: block; }
-
   .warmup {
     border: 1px solid var(--grid);
     border-radius: 6px;
@@ -126,11 +110,13 @@
   .exercise-cell { text-align: left; white-space: normal; min-width: 190px; }
   .exercise-name { font-weight: 700; text-transform: uppercase; font-size: 12px; }
   .exercise-sub { display: block; font-weight: 400; text-transform: none; color: var(--muted); font-size: 11px; margin-top: 1px; }
-  .section-label {
-    background: var(--label-fill);
-    font-weight: 700;
-    width: 22px;
-    vertical-align: middle;
+  .exercise-gif {
+    display: block;
+    margin-top: 6px;
+    width: 100px;
+    max-width: 100%;
+    border: 1px solid var(--grid);
+    border-radius: 4px;
   }
   .week-head {
     background: var(--head-fill);
@@ -150,7 +136,7 @@
   }
   .sub-head { background: var(--head-fill); font-size: 11px; text-transform: uppercase; width: 44px; }
   .core-row td { background: var(--core-fill); }
-  .core-title td {
+  .section-title td {
     background: var(--fg);
     color: var(--bg);
     font-weight: 700;
@@ -186,17 +172,18 @@
 
   <h1>Soccer Strength &amp; Shoulder Health</h1>
   <div class="subtitle">
-    3x/week &middot; 24 Hour Fitness &middot; 4-week block &middot; Trevor + Blake
+    3x/week &middot; 24 Hour Fitness &middot; 4-week block &middot; Trevor + Blake &middot; one simple full-body session, same lifts every time
   </div>
 
   <div class="goals">
-    <div class="goal-card"><b>Explosiveness</b><span>Cleans / jumps / bounds / rotational MB throws for soccer-specific power and change of direction.</span></div>
+    <div class="goal-card"><b>Explosiveness</b><span>Jumps for soccer-specific power and change of direction.</span></div>
     <div class="goal-card"><b>Upper Body Strength</b><span>Balanced press/pull volume to build real hypertrophy, not just prehab.</span></div>
     <div class="goal-card"><b>Shoulder Durability</b><span>Scap + rotator cuff work every session, kept out of provocative overhead ranges.</span></div>
+    <div class="goal-card"><b>Beginner-Friendly</b><span>Same 9 moves every session — just squat, press, row, jump, and shoulder health. Add weight as it gets easy.</span></div>
   </div>
 
   <div class="safety">
-    <b>Shoulder note:</b> given the bilateral Bankart repair history and two post-op right-shoulder re-dislocations, this program keeps shoulder work in rows, external rotation, scap, and landmine-angle pressing rather than loaded end-range overhead/abduction+external-rotation positions. This isn't medical advice — run the exercise list by your surgeon or PT before starting, and stop anything that reproduces an apprehension or instability feeling.
+    <b>Shoulder note:</b> given the bilateral Bankart repair history and two post-op right-shoulder re-dislocations, this program keeps shoulder work in rows, external rotation, and scap work rather than loaded end-range overhead/abduction+external-rotation positions. This isn't medical advice — run the exercise list by your surgeon or PT before starting, and stop anything that reproduces an apprehension or instability feeling.
   </div>
 
   <div class="who">
@@ -208,175 +195,78 @@
     <label style="margin-left:auto;">Logs save to this browser only (separate per person/device).</label>
   </div>
 
-  <div class="tabs" id="tabs"></div>
-  <div id="panels"></div>
+  <div id="warmup-container"></div>
+  <div id="table-container"></div>
 
   <footer>
-    Reps shown are the prescribed target — overwrite them if you log a different actual rep count (e.g. AMRAP sets). Weight fields are blank by default; enter what you actually used. Everything is saved locally in this browser via localStorage, so each of you should open this page on your own phone to keep separate logs.
+    Reps shown are the prescribed target — overwrite them if you log a different actual rep count. Weight fields are blank by default; enter what you actually used. Everything is saved locally in this browser via localStorage, so each of you should open this page on your own phone to keep separate logs.
+    <br><br>
+    Exercise animations &copy; <a href="https://gymvisual.com/" style="color:inherit;">Gym visual</a>, from the <a href="https://github.com/hasaneyldrm/exercises-dataset" style="color:inherit;">hasaneyldrm/exercises-dataset</a> project on GitHub (MIT license for data/code; media used per that repo's terms — see its <a href="https://github.com/hasaneyldrm/exercises-dataset/blob/main/NOTICE.md" style="color:inherit;">NOTICE.md</a>).
   </footer>
 </div>
 
 <script>
 const WEEK_COUNT = 4;
 const DEFAULT_DATES = ["7/13", "7/20", "7/27", "8/3"];
+const GIF_BASE = "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/";
 
-// sets: array of prescribed rep labels (one row per set). "sub" is optional note under the exercise name.
-const PROGRAM = [
-  {
-    id: "day1",
-    title: "Day 1 — Power + Press",
-    warmup: [
-      "5 min bike or jump rope",
-      "Leg swings (front/back, side/side) — 10 each",
-      "World's Greatest Stretch — 5 each side",
-      "Band pull-apart — 2x15",
-      "Arm circles + scapular wall slides — 2x10",
-      "3–5 sub-max broad jumps / pogo hops"
-    ],
-    sections: [
-      { letter: "A", rows: [
-          { name: "Hang Power Clean", sub: "or DB Squat Jump — power", sets: ["5","5","5","5","5"] },
-          { name: "1-Leg Glute Bridge", sub: "activation — pair with sets 1 & 2", sets: ["10E","10E"] },
-          { name: "Half-Kneeling Landmine Press", sub: "upper body", sets: ["8E","8E","8E"] }
-      ]},
-      { letter: "B", rows: [
-          { name: "DB Bench Press", sub: "60% / 70% / 75%, wk3-4 AMRAP set 3", sets: ["8 @60%","8 @70%","8 @75%"] },
-          { name: "DB Lunge Matrix", sub: "fwd, lateral, rotational", sets: ["4E","4E","4E"] },
-          { name: "Chest-Supported DB Row", sub: "upper body", sets: ["10-12","10-12","10-12"] }
-      ]},
-      { letter: "C", rows: [
-          { name: "Bat Wings", sub: "upper body — scap hold", sets: ["10x5s","10x5s"] },
-          { name: "Half-Kneeling Band Chop", sub: "upper body functional — rotational", sets: ["10E","10E"] },
-          { name: "Seated DB External Rotation", sub: "upper body", sets: ["15E","15E"] }
-      ]},
-      { letter: "", isCore: true, rows: [
-          { name: "Pallof Press", sub: "", sets: ["10E","10E"] },
-          { name: "Stick Crunch", sub: "", sets: ["2x15","2x15"] },
-          { name: "Side Plank w/ Top Leg Up", sub: "", sets: ["3x10sE"] },
-          { name: "Prone Plank w/ Arm Up", sub: "", sets: ["3x10sE"] },
-          { name: "Wipers", sub: "", sets: ["2x15E"] }
-      ]}
-    ]
-  },
-  {
-    id: "day2",
-    title: "Day 2 — Strength + Pull",
-    warmup: [
-      "5 min bike or row",
-      "Hip openers/closers — 10 each",
-      "Walking lunge w/ rotation — 8 each",
-      "Mini band lateral walk — 2x10",
-      "Scap push-up + band pull-apart — 2x10",
-      "Light KB swings — 2x10 (prime hips)"
-    ],
-    sections: [
-      { letter: "A", rows: [
-          { name: "Trap Bar Deadlift", sub: "or KB Swing — power/strength", sets: ["5","5","5","5","5"] },
-          { name: "Mini Band Lateral Walk", sub: "activation — pair with sets 1 & 2", sets: ["10E","10E"] },
-          { name: "Pull-Up / Lat Pulldown", sub: "upper body", sets: ["8-10","8-10","8-10"] }
-      ]},
-      { letter: "B", rows: [
-          { name: "Incline DB Press", sub: "60% / 70% / 75%, wk3-4 AMRAP set 3", sets: ["8 @60%","8 @70%","8 @75%"] },
-          { name: "Bulgarian Split Squat", sub: "lower body", sets: ["8E","8E","8E"] },
-          { name: "Single-Arm DB Row", sub: "upper body", sets: ["10E","10E","10E"] }
-      ]},
-      { letter: "C", rows: [
-          { name: "Face Pull", sub: "upper body", sets: ["15","15"] },
-          { name: "Half Get-Up", sub: "upper body functional — light KB, controlled", sets: ["5E","5E"] },
-          { name: "Prone Y-T-W Raise", sub: "upper body", sets: ["8 each"] }
-      ]},
-      { letter: "", isCore: true, rows: [
-          { name: "Hanging / Lying Leg Raise", sub: "", sets: ["2x12"] },
-          { name: "Prone Plank w/ Leg Up", sub: "", sets: ["3x10sE"] },
-          { name: "Side Plank w/ Bottom Leg Up", sub: "", sets: ["3x10sE"] },
-          { name: "Anti-Rotation Band Press-Out", sub: "", sets: ["10E"] }
-      ]}
-    ]
-  },
-  {
-    id: "day3",
-    title: "Day 3 — Explosive + Conditioning",
-    warmup: [
-      "5 min bike",
-      "A-skips / high knees — 2x20yd",
-      "Lateral shuffle — 2x20yd",
-      "Band monster walk — 2x10",
-      "Band pull-apart + wall slide — 2x10",
-      "3–5 sub-max pogo hops"
-    ],
-    sections: [
-      { letter: "A", rows: [
-          { name: "Box Jump / Broad Jump", sub: "power", sets: ["3","3","3","3","3"] },
-          { name: "Band Monster Walk", sub: "activation — pair with sets 1 & 2", sets: ["10E","10E"] },
-          { name: "DB Push Press", sub: "upper body", sets: ["6E","6E","6E"] }
-      ]},
-      { letter: "B", rows: [
-          { name: "Flat DB Bench", sub: "wk3-4 set 3 AMRAP", sets: ["8","8","AMRAP"] },
-          { name: "Lateral Bound / Skater Jump", sub: "lower body — change of direction", sets: ["5E","5E"] },
-          { name: "DB Row (Meadows-style)", sub: "upper body", sets: ["10E","10E","10E"] }
-      ]},
-      { letter: "C", rows: [
-          { name: "Band Pull-Apart", sub: "upper body", sets: ["2x20"] },
-          { name: "Serratus Wall Slide w/ Push", sub: "upper body functional", sets: ["10","10"] },
-          { name: "Side-Lying External Rotation", sub: "upper body", sets: ["12E","12E"] }
-      ]},
-      { letter: "", isCore: true, rows: [
-          { name: "Medicine Ball Rotational Throw", sub: "soccer torque, explosive", sets: ["6E"] },
-          { name: "Supine Plank w/ Leg Up", sub: "", sets: ["3x10sE"] },
-          { name: "Prone Plank Arm + Leg Lift", sub: "", sets: ["3x10sE"] },
-          { name: "KB Lying Leg Lift", sub: "", sets: ["2x20"] }
-      ]}
-    ]
-  }
+const WARMUP = [
+  "5 min bike or jump rope",
+  "Bodyweight squat — 10 reps, slow",
+  "Leg swings (front/back, side/side) — 10 each",
+  "Band pull-apart — 2x15",
+  "Arm circles + scapular wall slides — 2x10"
 ];
 
+// gif: path into the hasaneyldrm/exercises-dataset repo (videos/xxxx.gif), used as a hotlink — see footer attribution.
+// sets: array of prescribed rep labels, one entry per set.
+const PROGRAM = {
+  sections: [
+    { title: "Superset 1 — Squat + Row", rows: [
+        { name: "Goblet Squat", sub: "hold 1 DB at your chest, feet shoulder-width, sit hips back and down — the main lower-body lift every session", gif: "videos/1760-yn8yg1r.gif", sets: ["8","8","8"] },
+        { name: "Dumbbell Row", sub: "hinge at the hips, flat back, row the DB to your ribs", gif: "videos/0293-BJ0Hz5L.gif", sets: ["10E","10E","10E"] }
+    ]},
+    { title: "Superset 2 — Press + Jump", rows: [
+        { name: "Dumbbell Bench Press", sub: "or push-up — upper body push", gif: "videos/0289-SpYC0Kp.gif", sets: ["8","8","8"] },
+        { name: "Forward Jump", sub: "broad jump for distance, land soft with bent knees — swap for a squat jump in place if space is tight", gif: "videos/1472-uZKq7lo.gif", sets: ["5","5","5"] }
+    ]},
+    { title: "Superset 3 — Shoulder Health", rows: [
+        { name: "Band Rear Delt Row", sub: "band anchored in front, pull to your chest, squeeze shoulder blades", gif: "videos/1022-tc5dYrf.gif", sets: ["15","15"] },
+        { name: "Lying Dumbbell External Rotation", sub: "light weight, elbow pinned to your side", gif: "videos/0863-bmBf7LN.gif", sets: ["15E","15E"] },
+        { name: "Dumbbell Rear Delt Raise", sub: "hinge forward, light weight, raise out to the sides", gif: "videos/2292-mu5Guxt.gif", sets: ["15","15"] }
+    ]},
+    { title: "Core Series", isCore: true, rows: [
+        { name: "Plank Up-Down", sub: "from a high plank, lower one arm at a time to forearms, then back up", gif: "videos/3665-hCjGsRQ.gif", sets: ["8","8","8"] },
+        { name: "Dead Bug", sub: "low back pressed to the floor, opposite arm/leg extend together", gif: "videos/0276-iny3m5y.gif", sets: ["10E","10E"] },
+        { name: "Side Plank", sub: "forearm under shoulder, hips lifted to a straight line", gif: "videos/3544-5VXmnV5.gif", sets: ["20sE","20sE"] }
+    ]}
+  ]
+};
+
 function who() { return document.getElementById("who-select").value; }
-function storeKey(dayId, path) { return `wt:${who()}:${dayId}:${path}`; }
+function storeKey(path) { return `wt:${who()}:${path}`; }
 
-function buildTabs() {
-  const tabsEl = document.getElementById("tabs");
-  const panelsEl = document.getElementById("panels");
-  PROGRAM.forEach((day, i) => {
-    const btn = document.createElement("button");
-    btn.className = "tab-btn" + (i === 0 ? " active" : "");
-    btn.textContent = day.title;
-    btn.onclick = () => {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".day-panel").forEach(p => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById("panel-" + day.id).classList.add("active");
-    };
-    tabsEl.appendChild(btn);
-
-    const panel = document.createElement("div");
-    panel.className = "day-panel" + (i === 0 ? " active" : "");
-    panel.id = "panel-" + day.id;
-    panel.appendChild(buildWarmup(day));
-    panel.appendChild(buildTable(day));
-    panelsEl.appendChild(panel);
-  });
-}
-
-function buildWarmup(day) {
+function buildWarmup() {
   const box = document.createElement("div");
   box.className = "warmup";
-  box.innerHTML = `<h3>Warm-up</h3><ul>${day.warmup.map(w => `<li>${w}</li>`).join("")}</ul>`;
+  box.innerHTML = `<h3>Warm-up</h3><ul>${WARMUP.map(w => `<li>${w}</li>`).join("")}</ul>`;
   return box;
 }
 
-function buildTable(day) {
+function buildTable() {
   const scroll = document.createElement("div");
   scroll.className = "table-scroll";
   const table = document.createElement("table");
+  const totalCols = 1 + WEEK_COUNT * 2;
 
-  // header row 1: blank corner + week date inputs (colspan 2 each)
+  // header row 1: exercise column + week date inputs (colspan 2 each)
   const thead1 = document.createElement("tr");
-  thead1.innerHTML = `<th class="section-label"></th><th class="week-head" style="text-align:left;">EXERCISE</th>`;
+  thead1.innerHTML = `<th class="week-head" style="text-align:left;">EXERCISE</th>`;
   for (let w = 0; w < WEEK_COUNT; w++) {
     const th = document.createElement("th");
     th.className = "week-head";
     th.colSpan = 2;
-    const key = storeKey(day.id, `date:${w}`);
+    const key = storeKey(`date:${w}`);
     const saved = localStorage.getItem(key);
     th.innerHTML = `<input class="week-date-input" data-key="${key}" value="${saved || DEFAULT_DATES[w]}">`;
     thead1.appendChild(th);
@@ -385,35 +275,30 @@ function buildTable(day) {
 
   // header row 2: REPS / WT sub-headers
   const thead2 = document.createElement("tr");
-  thead2.innerHTML = `<th class="section-label"></th><th class="week-head"></th>`;
+  thead2.innerHTML = `<th class="week-head"></th>`;
   for (let w = 0; w < WEEK_COUNT; w++) {
     thead2.innerHTML += `<th class="sub-head">REPS</th><th class="sub-head">WT</th>`;
   }
   table.appendChild(thead2);
 
-  day.sections.forEach((section, sIdx) => {
-    if (section.isCore) {
-      const titleRow = document.createElement("tr");
-      titleRow.className = "core-row core-title";
-      titleRow.innerHTML = `<td colspan="${2 + WEEK_COUNT * 2}">Core Series</td>`;
-      table.appendChild(titleRow);
-    }
+  PROGRAM.sections.forEach((section, sIdx) => {
+    const titleRow = document.createElement("tr");
+    titleRow.className = "section-title" + (section.isCore ? " core-row" : "");
+    titleRow.innerHTML = `<td colspan="${totalCols}">${section.title}</td>`;
+    table.appendChild(titleRow);
+
     section.rows.forEach((ex, rIdx) => {
       ex.sets.forEach((target, setIdx) => {
         const tr = document.createElement("tr");
         if (section.isCore) tr.className = "core-row";
         let cells = "";
-        if (section.isCore) {
-          cells += `<td class="section-label"></td>`;
-        } else if (rIdx === 0 && setIdx === 0) {
-          cells += `<td class="section-label" rowspan="${sumSets(section)}">${section.letter}</td>`;
-        }
         if (setIdx === 0) {
-          cells += `<td class="exercise-cell" rowspan="${ex.sets.length}"><span class="exercise-name">${ex.name}</span>${ex.sub ? `<span class="exercise-sub">${ex.sub}</span>` : ""}</td>`;
+          const gifImg = ex.gif ? `<img class="exercise-gif" src="${GIF_BASE}${ex.gif}" alt="${ex.name} demonstration" loading="lazy">` : "";
+          cells += `<td class="exercise-cell" rowspan="${ex.sets.length}"><span class="exercise-name">${ex.name}</span>${ex.sub ? `<span class="exercise-sub">${ex.sub}</span>` : ""}${gifImg}</td>`;
         }
         for (let w = 0; w < WEEK_COUNT; w++) {
-          const repsKey = storeKey(day.id, `${sIdx}-${rIdx}-${setIdx}-${w}-reps`);
-          const wtKey = storeKey(day.id, `${sIdx}-${rIdx}-${setIdx}-${w}-wt`);
+          const repsKey = storeKey(`${sIdx}-${rIdx}-${setIdx}-${w}-reps`);
+          const wtKey = storeKey(`${sIdx}-${rIdx}-${setIdx}-${w}-wt`);
           const savedReps = localStorage.getItem(repsKey);
           const savedWt = localStorage.getItem(wtKey);
           cells += `<td><input class="log reps" data-key="${repsKey}" value="${savedReps !== null ? savedReps : target}"></td>`;
@@ -430,10 +315,6 @@ function buildTable(day) {
   return scroll;
 }
 
-function sumSets(section) {
-  return section.rows.reduce((n, ex) => n + ex.sets.length, 0);
-}
-
 function attachPersistence(container) {
   container.querySelectorAll("input[data-key]").forEach(input => {
     input.addEventListener("change", () => {
@@ -442,13 +323,18 @@ function attachPersistence(container) {
   });
 }
 
-document.getElementById("who-select").addEventListener("change", () => {
-  document.getElementById("panels").innerHTML = "";
-  document.getElementById("tabs").innerHTML = "";
-  buildTabs();
-});
+function render() {
+  const warmupEl = document.getElementById("warmup-container");
+  const tableEl = document.getElementById("table-container");
+  warmupEl.innerHTML = "";
+  tableEl.innerHTML = "";
+  warmupEl.appendChild(buildWarmup());
+  tableEl.appendChild(buildTable());
+}
 
-buildTabs();
+document.getElementById("who-select").addEventListener("change", render);
+
+render();
 </script>
 </body>
 </html>
