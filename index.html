@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soccer Strength &amp; Shoulder Health — Tracker</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #111111;
+    --grid: #000000;
+    --head-fill: #bfbfbf;
+    --label-fill: #d9d9d9;
+    --core-fill: #eeeeee;
+    --muted: #555555;
+    --accent: #1a5fb4;
+    --input-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --fg: #f0f0f0;
+      --grid: #666666;
+      --head-fill: #3a3d44;
+      --label-fill: #2b2e34;
+      --core-fill: #24262b;
+      --muted: #a0a4ab;
+      --accent: #6ea8fe;
+      --input-bg: #1d1f24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    margin: 0 0 2px;
+    text-transform: uppercase;
+    border-bottom: 3px solid var(--fg);
+    padding-bottom: 10px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 8px 0 18px;
+    line-height: 1.5;
+  }
+  .goals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .goal-card {
+    border: 1px solid var(--grid);
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: var(--label-fill);
+  }
+  .goal-card b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .goal-card span { color: var(--muted); font-size: 12.5px; }
+
+  .safety {
+    border: 1px solid #b45309;
+    background: rgba(180, 83, 9, 0.08);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .safety b { color: #b45309; }
+
+  .who {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .who label { font-size: 12.5px; color: var(--muted); }
+  .who select {
+    font-size: 13px; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--grid);
+    background: var(--input-bg); color: var(--fg);
+  }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--fg);
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 4px;
+  }
+  .tab-btn.active { background: var(--fg); color: var(--bg); }
+
+  .day-panel { display: none; }
+  .day-panel.active { display: block; }
+
+  .warmup {
+    border: 1px solid var(--grid);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    background: var(--label-fill);
+  }
+  .warmup h3 { margin: 0 0 6px; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .warmup ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--grid); border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; }
+  th, td {
+    border: 1px solid var(--grid);
+    padding: 5px 7px;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 12.5px;
+  }
+  .exercise-cell { text-align: left; white-space: normal; min-width: 190px; }
+  .exercise-name { font-weight: 700; text-transform: uppercase; font-size: 12px; }
+  .exercise-sub { display: block; font-weight: 400; text-transform: none; color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .section-label {
+    background: var(--label-fill);
+    font-weight: 700;
+    width: 22px;
+    vertical-align: middle;
+  }
+  .week-head {
+    background: var(--head-fill);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11.5px;
+  }
+  .week-date-input {
+    width: 90px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    font-weight: 700;
+    text-align: center;
+    font-size: 11.5px;
+    text-transform: uppercase;
+  }
+  .sub-head { background: var(--head-fill); font-size: 11px; text-transform: uppercase; width: 44px; }
+  .core-row td { background: var(--core-fill); }
+  .core-title td {
+    background: var(--fg);
+    color: var(--bg);
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+  }
+  input.log {
+    width: 42px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    text-align: center;
+    font-size: 12.5px;
+    padding: 2px;
+  }
+  input.log:focus { outline: 1px solid var(--accent); background: var(--input-bg); }
+  input.log.wt { width: 46px; }
+
+  footer {
+    margin-top: 28px;
+    font-size: 11.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--grid);
+    padding-top: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Soccer Strength &amp; Shoulder Health</h1>
+  <div class="subtitle">
+    3x/week &middot; 24 Hour Fitness &middot; 4-week block &middot; Trevor + Blake
+  </div>
+
+  <div class="goals">
+    <div class="goal-card"><b>Explosiveness</b><span>Cleans / jumps / bounds / rotational MB throws for soccer-specific power and change of direction.</span></div>
+    <div class="goal-card"><b>Upper Body Strength</b><span>Balanced press/pull volume to build real hypertrophy, not just prehab.</span></div>
+    <div class="goal-card"><b>Shoulder Durability</b><span>Scap + rotator cuff work every session, kept out of provocative overhead ranges.</span></div>
+  </div>
+
+  <div class="safety">
+    <b>Shoulder note:</b> given the bilateral Bankart repair history and two post-op right-shoulder re-dislocations, this program keeps shoulder work in rows, external rotation, scap, and landmine-angle pressing rather than loaded end-range overhead/abduction+external-rotation positions. This isn't medical advice — run the exercise list by your surgeon or PT before starting, and stop anything that reproduces an apprehension or instability feeling.
+  </div>
+
+  <div class="who">
+    <label for="who-select">Tracking as:</label>
+    <select id="who-select">
+      <option>Trevor</option>
+      <option>Blake</option>
+    </select>
+    <label style="margin-left:auto;">Logs save to this browser only (separate per person/device).</label>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
+
+  <footer>
+    Reps shown are the prescribed target — overwrite them if you log a different actual rep count (e.g. AMRAP sets). Weight fields are blank by default; enter what you actually used. Everything is saved locally in this browser via localStorage, so each of you should open this page on your own phone to keep separate logs.
+  </footer>
+</div>
+
+<script>
+const WEEK_COUNT = 4;
+const DEFAULT_DATES = ["7/13", "7/20", "7/27", "8/3"];
+
+// sets: array of prescribed rep labels (one row per set). "sub" is optional note under the exercise name.
+const PROGRAM = [
+  {
+    id: "day1",
+    title: "Day 1 — Power + Press",
+    warmup: [
+      "5 min bike or jump rope",
+      "Leg swings (front/back, side/side) — 10 each",
+      "World's Greatest Stretch — 5 each side",
+      "Band pull-apart — 2x15",
+      "Arm circles + scapular wall slides — 2x10",
+      "3–5 sub-max broad jumps / pogo hops"
+    ],
+    sections: [
+      { letter: "A", rows: [
+          { name: "Hang Power Clean", sub: "or DB Squat Jump — power", sets: ["5","5","5","5","5"] },
+          { name: "1-Leg Glute Bridge", sub: "activation — pair with sets 1 & 2", sets: ["10E","10E"] },
+          { name: "Half-Kneeling Landmine Press", sub: "upper body", sets: ["8E","8E","8E"] }
+      ]},
+      { letter: "B", rows: [
+          { name: "DB Bench Press", sub: "60% / 70% / 75%, wk3-4 AMRAP set 3", sets: ["8 @60%","8 @70%","8 @75%"] },
+          { name: "DB Lunge Matrix", sub: "fwd, lateral, rotational", sets: ["4E","4E","4E"] },
+          { name: "Chest-Supported DB Row", sub: "upper body", sets: ["10-12","10-12","10-12"] }
+      ]},
+      { letter: "C", rows: [
+          { name: "Bat Wings", sub: "upper body — scap hold", sets: ["10x5s","10x5s"] },
+          { name: "Half-Kneeling Band Chop", sub: "upper body functional — rotational", sets: ["10E","10E"] },
+          { name: "Seated DB External Rotation", sub: "upper body", sets: ["15E","15E"] }
+      ]},
+      { letter: "", isCore: true, rows: [
+          { name: "Pallof Press", sub: "", sets: ["10E","10E"] },
+          { name: "Stick Crunch", sub: "", sets: ["2x15","2x15"] },
+          { name: "Side Plank w/ Top Leg Up", sub: "", sets: ["3x10sE"] },
+          { name: "Prone Plank w/ Arm Up", sub: "", sets: ["3x10sE"] },
+          { name: "Wipers", sub: "", sets: ["2x15E"] }
+      ]}
+    ]
+  },
+  {
+    id: "day2",
+    title: "Day 2 — Strength + Pull",
+    warmup: [
+      "5 min bike or row",
+      "Hip openers/closers — 10 each",
+      "Walking lunge w/ rotation — 8 each",
+      "Mini band lateral walk — 2x10",
+      "Scap push-up + band pull-apart — 2x10",
+      "Light KB swings — 2x10 (prime hips)"
+    ],
+    sections: [
+      { letter: "A", rows: [
+          { name: "Trap Bar Deadlift", sub: "or KB Swing — power/strength", sets: ["5","5","5","5","5"] },
+          { name: "Mini Band Lateral Walk", sub: "activation — pair with sets 1 & 2", sets: ["10E","10E"] },
+          { name: "Pull-Up / Lat Pulldown", sub: "upper body", sets: ["8-10","8-10","8-10"] }
+      ]},
+      { letter: "B", rows: [
+          { name: "Incline DB Press", sub: "60% / 70% / 75%, wk3-4 AMRAP set 3", sets: ["8 @60%","8 @70%","8 @75%"] },
+          { name: "Bulgarian Split Squat", sub: "lower body", sets: ["8E","8E","8E"] },
+          { name: "Single-Arm DB Row", sub: "upper body", sets: ["10E","10E","10E"] }
+      ]},
+      { letter: "C", rows: [
+          { name: "Face Pull", sub: "upper body", sets: ["15","15"] },
+          { name: "Half Get-Up", sub: "upper body functional — light KB, controlled", sets: ["5E","5E"] },
+          { name: "Prone Y-T-W Raise", sub: "upper body", sets: ["8 each"] }
+      ]},
+      { letter: "", isCore: true, rows: [
+          { name: "Hanging / Lying Leg Raise", sub: "", sets: ["2x12"] },
+          { name: "Prone Plank w/ Leg Up", sub: "", sets: ["3x10sE"] },
+          { name: "Side Plank w/ Bottom Leg Up", sub: "", sets: ["3x10sE"] },
+          { name: "Anti-Rotation Band Press-Out", sub: "", sets: ["10E"] }
+      ]}
+    ]
+  },
+  {
+    id: "day3",
+    title: "Day 3 — Explosive + Conditioning",
+    warmup: [
+      "5 min bike",
+      "A-skips / high knees — 2x20yd",
+      "Lateral shuffle — 2x20yd",
+      "Band monster walk — 2x10",
+      "Band pull-apart + wall slide — 2x10",
+      "3–5 sub-max pogo hops"
+    ],
+    sections: [
+      { letter: "A", rows: [
+          { name: "Box Jump / Broad Jump", sub: "power", sets: ["3","3","3","3","3"] },
+          { name: "Band Monster Walk", sub: "activation — pair with sets 1 & 2", sets: ["10E","10E"] },
+          { name: "DB Push Press", sub: "upper body", sets: ["6E","6E","6E"] }
+      ]},
+      { letter: "B", rows: [
+          { name: "Flat DB Bench", sub: "wk3-4 set 3 AMRAP", sets: ["8","8","AMRAP"] },
+          { name: "Lateral Bound / Skater Jump", sub: "lower body — change of direction", sets: ["5E","5E"] },
+          { name: "DB Row (Meadows-style)", sub: "upper body", sets: ["10E","10E","10E"] }
+      ]},
+      { letter: "C", rows: [
+          { name: "Band Pull-Apart", sub: "upper body", sets: ["2x20"] },
+          { name: "Serratus Wall Slide w/ Push", sub: "upper body functional", sets: ["10","10"] },
+          { name: "Side-Lying External Rotation", sub: "upper body", sets: ["12E","12E"] }
+      ]},
+      { letter: "", isCore: true, rows: [
+          { name: "Medicine Ball Rotational Throw", sub: "soccer torque, explosive", sets: ["6E"] },
+          { name: "Supine Plank w/ Leg Up", sub: "", sets: ["3x10sE"] },
+          { name: "Prone Plank Arm + Leg Lift", sub: "", sets: ["3x10sE"] },
+          { name: "KB Lying Leg Lift", sub: "", sets: ["2x20"] }
+      ]}
+    ]
+  }
+];
+
+function who() { return document.getElementById("who-select").value; }
+function storeKey(dayId, path) { return `wt:${who()}:${dayId}:${path}`; }
+
+function buildTabs() {
+  const tabsEl = document.getElementById("tabs");
+  const panelsEl = document.getElementById("panels");
+  PROGRAM.forEach((day, i) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (i === 0 ? " active" : "");
+    btn.textContent = day.title;
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".day-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + day.id).classList.add("active");
+    };
+    tabsEl.appendChild(btn);
+
+    const panel = document.createElement("div");
+    panel.className = "day-panel" + (i === 0 ? " active" : "");
+    panel.id = "panel-" + day.id;
+    panel.appendChild(buildWarmup(day));
+    panel.appendChild(buildTable(day));
+    panelsEl.appendChild(panel);
+  });
+}
+
+function buildWarmup(day) {
+  const box = document.createElement("div");
+  box.className = "warmup";
+  box.innerHTML = `<h3>Warm-up</h3><ul>${day.warmup.map(w => `<li>${w}</li>`).join("")}</ul>`;
+  return box;
+}
+
+function buildTable(day) {
+  const scroll = document.createElement("div");
+  scroll.className = "table-scroll";
+  const table = document.createElement("table");
+
+  // header row 1: blank corner + week date inputs (colspan 2 each)
+  const thead1 = document.createElement("tr");
+  thead1.innerHTML = `<th class="section-label"></th><th class="week-head" style="text-align:left;">EXERCISE</th>`;
+  for (let w = 0; w < WEEK_COUNT; w++) {
+    const th = document.createElement("th");
+    th.className = "week-head";
+    th.colSpan = 2;
+    const key = storeKey(day.id, `date:${w}`);
+    const saved = localStorage.getItem(key);
+    th.innerHTML = `<input class="week-date-input" data-key="${key}" value="${saved || DEFAULT_DATES[w]}">`;
+    thead1.appendChild(th);
+  }
+  table.appendChild(thead1);
+
+  // header row 2: REPS / WT sub-headers
+  const thead2 = document.createElement("tr");
+  thead2.innerHTML = `<th class="section-label"></th><th class="week-head"></th>`;
+  for (let w = 0; w < WEEK_COUNT; w++) {
+    thead2.innerHTML += `<th class="sub-head">REPS</th><th class="sub-head">WT</th>`;
+  }
+  table.appendChild(thead2);
+
+  day.sections.forEach((section, sIdx) => {
+    if (section.isCore) {
+      const titleRow = document.createElement("tr");
+      titleRow.className = "core-row core-title";
+      titleRow.innerHTML = `<td colspan="${2 + WEEK_COUNT * 2}">Core Series</td>`;
+      table.appendChild(titleRow);
+    }
+    section.rows.forEach((ex, rIdx) => {
+      ex.sets.forEach((target, setIdx) => {
+        const tr = document.createElement("tr");
+        if (section.isCore) tr.className = "core-row";
+        let cells = "";
+        if (setIdx === 0) {
+          if (!section.isCore) {
+            cells += `<td class="section-label" rowspan="${sumSets(section)}">${section.letter}</td>`;
+          } else {
+            cells += `<td class="section-label"></td>`;
+          }
+        }
+        if (setIdx === 0) {
+          cells += `<td class="exercise-cell" rowspan="${ex.sets.length}"><span class="exercise-name">${ex.name}</span>${ex.sub ? `<span class="exercise-sub">${ex.sub}</span>` : ""}</td>`;
+        }
+        for (let w = 0; w < WEEK_COUNT; w++) {
+          const repsKey = storeKey(day.id, `${sIdx}-${rIdx}-${setIdx}-${w}-reps`);
+          const wtKey = storeKey(day.id, `${sIdx}-${rIdx}-${setIdx}-${w}-wt`);
+          const savedReps = localStorage.getItem(repsKey);
+          const savedWt = localStorage.getItem(wtKey);
+          cells += `<td><input class="log reps" data-key="${repsKey}" value="${savedReps !== null ? savedReps : target}"></td>`;
+          cells += `<td><input class="log wt" data-key="${wtKey}" value="${savedWt !== null ? savedWt : ""}"></td>`;
+        }
+        tr.innerHTML = cells;
+        table.appendChild(tr);
+      });
+    });
+  });
+
+  scroll.appendChild(table);
+  attachPersistence(scroll);
+  return scroll;
+}
+
+function sumSets(section) {
+  return section.rows.reduce((n, ex) => n + ex.sets.length, 0);
+}
+
+function attachPersistence(container) {
+  container.querySelectorAll("input[data-key]").forEach(input => {
+    input.addEventListener("change", () => {
+      localStorage.setItem(input.dataset.key, input.value);
+    });
+  });
+}
+
+document.getElementById("who-select").addEventListener("change", () => {
+  document.getElementById("panels").innerHTML = "";
+  document.getElementById("tabs").innerHTML = "";
+  buildTabs();
+});
+
+buildTabs();
+</script>
+</body>
+</html>
