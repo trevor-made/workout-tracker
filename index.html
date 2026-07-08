@@ -403,12 +403,10 @@ function buildTable(day) {
         const tr = document.createElement("tr");
         if (section.isCore) tr.className = "core-row";
         let cells = "";
-        if (setIdx === 0) {
-          if (!section.isCore) {
-            cells += `<td class="section-label" rowspan="${sumSets(section)}">${section.letter}</td>`;
-          } else {
-            cells += `<td class="section-label"></td>`;
-          }
+        if (section.isCore) {
+          cells += `<td class="section-label"></td>`;
+        } else if (rIdx === 0 && setIdx === 0) {
+          cells += `<td class="section-label" rowspan="${sumSets(section)}">${section.letter}</td>`;
         }
         if (setIdx === 0) {
           cells += `<td class="exercise-cell" rowspan="${ex.sets.length}"><span class="exercise-name">${ex.name}</span>${ex.sub ? `<span class="exercise-sub">${ex.sub}</span>` : ""}</td>`;
