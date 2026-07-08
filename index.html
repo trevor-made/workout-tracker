@@ -88,6 +88,22 @@
     background: var(--input-bg); color: var(--fg);
   }
 
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--fg);
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 4px;
+  }
+  .tab-btn.active { background: var(--fg); color: var(--bg); }
+
+  .day-panel { display: none; }
+  .day-panel.active { display: block; }
+
   .warmup {
     border: 1px solid var(--grid);
     border-radius: 6px;
@@ -172,14 +188,14 @@
 
   <h1>Soccer Strength &amp; Shoulder Health</h1>
   <div class="subtitle">
-    3x/week &middot; 24 Hour Fitness &middot; 4-week block &middot; Trevor + Blake &middot; one simple full-body session, same lifts every time
+    3x/week &middot; 24 Hour Fitness &middot; 4-week block &middot; Trevor + Blake &middot; Day 1 Full Body, Day 2 Upper, Day 3 Lower — Core every day
   </div>
 
   <div class="goals">
     <div class="goal-card"><b>Explosiveness</b><span>Jumps for soccer-specific power and change of direction.</span></div>
     <div class="goal-card"><b>Upper Body Strength</b><span>Balanced press/pull volume to build real hypertrophy, not just prehab.</span></div>
     <div class="goal-card"><b>Shoulder Durability</b><span>Scap + rotator cuff work every session, kept out of provocative overhead ranges.</span></div>
-    <div class="goal-card"><b>Beginner-Friendly</b><span>Same 11 moves every session, grouped in 5 easy-to-remember pairs/trios. Add weight as it gets easy.</span></div>
+    <div class="goal-card"><b>Beginner-Friendly</b><span>Still the same 11 moves — just re-split across 3 days so each region gets more weekly volume. Nothing new to learn.</span></div>
   </div>
 
   <div class="safety">
@@ -195,8 +211,8 @@
     <label style="margin-left:auto;">Logs save to this browser only (separate per person/device).</label>
   </div>
 
-  <div id="warmup-container"></div>
-  <div id="table-container"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
 
   <footer>
     Reps shown are the prescribed target — overwrite them if you log a different actual rep count. Weight fields are blank by default; enter what you actually used. Everything is saved locally in this browser via localStorage, so each of you should open this page on your own phone to keep separate logs.
@@ -217,37 +233,106 @@ const WARMUP = [
   "Arm circles + scapular wall slides — 2x10"
 ];
 
+// Same 11 exercises throughout, just re-split across 3 days by pattern (full body / upper / lower).
 // gif: path into the hasaneyldrm/exercises-dataset repo (videos/xxxx.gif), used as a hotlink — see footer attribution.
 // sets: array of prescribed rep labels, one entry per set.
-const PROGRAM = {
-  sections: [
-    { title: "Superset 1 — Squat + Row", rows: [
-        { name: "Goblet Squat", sub: "hold 1 DB at your chest, feet shoulder-width, sit hips back and down — the main lower-body lift every session", gif: "videos/1760-yn8yg1r.gif", sets: ["8","8","8"] },
-        { name: "Dumbbell Row", sub: "hinge at the hips, flat back, row the DB to your ribs", gif: "videos/0293-BJ0Hz5L.gif", sets: ["10E","10E","10E"] }
-    ]},
-    { title: "Superset 2 — Press + Jump", rows: [
-        { name: "Dumbbell Bench Press", sub: "or push-up — upper body push", gif: "videos/0289-SpYC0Kp.gif", sets: ["8","8","8"] },
-        { name: "Forward Jump", sub: "broad jump for distance, land soft with bent knees — swap for a squat jump in place if space is tight", gif: "videos/1472-uZKq7lo.gif", sets: ["5","5","5"] }
-    ]},
-    { title: "Superset 3 — Shoulder Health", rows: [
-        { name: "Cable Rear Delt Row", sub: "low pulley with a rope handle, pull to your chest, squeeze shoulder blades", gif: "videos/0203-wqNPGCg.gif", sets: ["15","15"] },
-        { name: "Lying Dumbbell External Rotation", sub: "light weight, elbow pinned to your side", gif: "videos/0863-bmBf7LN.gif", sets: ["15E","15E"] },
-        { name: "Dumbbell Rear Delt Raise", sub: "hinge forward, light weight, raise out to the sides", gif: "videos/2292-mu5Guxt.gif", sets: ["15","15"] }
-    ]},
-    { title: "Superset 4 — Deadlift + Pull", rows: [
-        { name: "Dumbbell Romanian Deadlift", sub: "soft knees, hinge the hips back, feel it in your hamstrings — balances the squat's quad focus", gif: "videos/1459-rR0LJzx.gif", sets: ["8","8","8"] },
-        { name: "Cable Lat Pulldown", sub: "seated machine, pull the bar to your upper chest, squeeze shoulder blades — vertical pull to balance the row", gif: "videos/2330-LEprlgG.gif", sets: ["10","10","10"] }
-    ]},
-    { title: "Core Series", isCore: true, rows: [
-        { name: "Plank Up-Down", sub: "from a high plank, lower one arm at a time to forearms, then back up", gif: "videos/3665-hCjGsRQ.gif", sets: ["8","8","8"] },
-        { name: "Dead Bug", sub: "low back pressed to the floor, opposite arm/leg extend together", gif: "videos/0276-iny3m5y.gif", sets: ["10E","10E"] },
-        { name: "Side Plank", sub: "forearm under shoulder, hips lifted to a straight line", gif: "videos/3544-5VXmnV5.gif", sets: ["20sE","20sE"] }
-    ]}
-  ]
-};
+const GOBLET_SQUAT = { name: "Goblet Squat", sub: "hold 1 DB at your chest, feet shoulder-width, sit hips back and down — the main lower-body lift", gif: "videos/1760-yn8yg1r.gif" };
+const DB_ROW = { name: "Dumbbell Row", sub: "hinge at the hips, flat back, row the DB to your ribs", gif: "videos/0293-BJ0Hz5L.gif" };
+const DB_BENCH = { name: "Dumbbell Bench Press", sub: "or push-up — upper body push", gif: "videos/0289-SpYC0Kp.gif" };
+const FORWARD_JUMP = { name: "Forward Jump", sub: "broad jump for distance, land soft with bent knees — swap for a squat jump in place if space is tight", gif: "videos/1472-uZKq7lo.gif" };
+const CABLE_REAR_DELT_ROW = { name: "Cable Rear Delt Row", sub: "low pulley with a rope handle, pull to your chest, squeeze shoulder blades", gif: "videos/0203-wqNPGCg.gif" };
+const LYING_EXT_ROTATION = { name: "Lying Dumbbell External Rotation", sub: "light weight, elbow pinned to your side", gif: "videos/0863-bmBf7LN.gif" };
+const REAR_DELT_RAISE = { name: "Dumbbell Rear Delt Raise", sub: "hinge forward, light weight, raise out to the sides", gif: "videos/2292-mu5Guxt.gif" };
+const DB_RDL = { name: "Dumbbell Romanian Deadlift", sub: "soft knees, hinge the hips back, feel it in your hamstrings — balances the squat's quad focus", gif: "videos/1459-rR0LJzx.gif" };
+const LAT_PULLDOWN = { name: "Cable Lat Pulldown", sub: "seated machine, pull the bar to your upper chest, squeeze shoulder blades — vertical pull to balance the row", gif: "videos/2330-LEprlgG.gif" };
+const PLANK_UPDOWN = { name: "Plank Up-Down", sub: "from a high plank, lower one arm at a time to forearms, then back up", gif: "videos/3665-hCjGsRQ.gif" };
+const DEAD_BUG = { name: "Dead Bug", sub: "low back pressed to the floor, opposite arm/leg extend together", gif: "videos/0276-iny3m5y.gif" };
+const SIDE_PLANK = { name: "Side Plank", sub: "forearm under shoulder, hips lifted to a straight line", gif: "videos/3544-5VXmnV5.gif" };
+
+const CORE_SECTION = { title: "Core Series", isCore: true, rows: [
+    { ...PLANK_UPDOWN, sets: ["8","8","8"] },
+    { ...DEAD_BUG, sets: ["10E","10E"] },
+    { ...SIDE_PLANK, sets: ["20sE","20sE"] }
+]};
+
+const DAYS = [
+  {
+    id: "day1", title: "Day 1 — Full Body",
+    sections: [
+      { title: "Superset 1 — Squat + Row", rows: [
+          { ...GOBLET_SQUAT, sets: ["8","8","8"] },
+          { ...DB_ROW, sets: ["10E","10E","10E"] }
+      ]},
+      { title: "Superset 2 — Press + Jump", rows: [
+          { ...DB_BENCH, sets: ["8","8","8"] },
+          { ...FORWARD_JUMP, sets: ["5","5","5"] }
+      ]},
+      { title: "Superset 3 — Deadlift + Pull", rows: [
+          { ...DB_RDL, sets: ["8","8","8"] },
+          { ...LAT_PULLDOWN, sets: ["10","10","10"] }
+      ]},
+      CORE_SECTION
+    ]
+  },
+  {
+    id: "day2", title: "Day 2 — Upper Body",
+    sections: [
+      { title: "Superset 1 — Press + Row", rows: [
+          { ...DB_BENCH, sets: ["8","8","8","8"] },
+          { ...DB_ROW, sets: ["10E","10E","10E","10E"] }
+      ]},
+      { title: "Superset 2 — Pulldown + Rear Delt Row", rows: [
+          { ...LAT_PULLDOWN, sets: ["10","10","10","10"] },
+          { ...CABLE_REAR_DELT_ROW, sets: ["15","15","15"] }
+      ]},
+      { title: "Superset 3 — Shoulder Health", rows: [
+          { ...LYING_EXT_ROTATION, sets: ["15E","15E","15E"] },
+          { ...REAR_DELT_RAISE, sets: ["15","15","15"] }
+      ]},
+      CORE_SECTION
+    ]
+  },
+  {
+    id: "day3", title: "Day 3 — Lower Body",
+    sections: [
+      { title: "Superset 1 — Squat + Deadlift", rows: [
+          { ...GOBLET_SQUAT, sets: ["8","8","8","8"] },
+          { ...DB_RDL, sets: ["8","8","8","8"] }
+      ]},
+      { title: "Superset 2 — Explosive", rows: [
+          { ...FORWARD_JUMP, sets: ["5","5","5","5"] }
+      ]},
+      CORE_SECTION
+    ]
+  }
+];
 
 function who() { return document.getElementById("who-select").value; }
-function storeKey(path) { return `wt:${who()}:${path}`; }
+function storeKey(dayId, path) { return `wt:${who()}:${dayId}:${path}`; }
+
+function buildTabs() {
+  const tabsEl = document.getElementById("tabs");
+  const panelsEl = document.getElementById("panels");
+  DAYS.forEach((day, i) => {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (i === 0 ? " active" : "");
+    btn.textContent = day.title;
+    btn.onclick = () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".day-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + day.id).classList.add("active");
+    };
+    tabsEl.appendChild(btn);
+
+    const panel = document.createElement("div");
+    panel.className = "day-panel" + (i === 0 ? " active" : "");
+    panel.id = "panel-" + day.id;
+    panel.appendChild(buildWarmup());
+    panel.appendChild(buildTable(day));
+    panelsEl.appendChild(panel);
+  });
+}
 
 function buildWarmup() {
   const box = document.createElement("div");
@@ -256,7 +341,7 @@ function buildWarmup() {
   return box;
 }
 
-function buildTable() {
+function buildTable(day) {
   const scroll = document.createElement("div");
   scroll.className = "table-scroll";
   const table = document.createElement("table");
@@ -269,7 +354,7 @@ function buildTable() {
     const th = document.createElement("th");
     th.className = "week-head";
     th.colSpan = 2;
-    const key = storeKey(`date:${w}`);
+    const key = storeKey(day.id, `date:${w}`);
     const saved = localStorage.getItem(key);
     th.innerHTML = `<input class="week-date-input" data-key="${key}" value="${saved || DEFAULT_DATES[w]}">`;
     thead1.appendChild(th);
@@ -284,7 +369,7 @@ function buildTable() {
   }
   table.appendChild(thead2);
 
-  PROGRAM.sections.forEach((section, sIdx) => {
+  day.sections.forEach((section, sIdx) => {
     const titleRow = document.createElement("tr");
     titleRow.className = "section-title" + (section.isCore ? " core-row" : "");
     titleRow.innerHTML = `<td colspan="${totalCols}">${section.title}</td>`;
@@ -300,8 +385,8 @@ function buildTable() {
           cells += `<td class="exercise-cell" rowspan="${ex.sets.length}"><span class="exercise-name">${ex.name}</span>${ex.sub ? `<span class="exercise-sub">${ex.sub}</span>` : ""}${gifImg}</td>`;
         }
         for (let w = 0; w < WEEK_COUNT; w++) {
-          const repsKey = storeKey(`${sIdx}-${rIdx}-${setIdx}-${w}-reps`);
-          const wtKey = storeKey(`${sIdx}-${rIdx}-${setIdx}-${w}-wt`);
+          const repsKey = storeKey(day.id, `${sIdx}-${rIdx}-${setIdx}-${w}-reps`);
+          const wtKey = storeKey(day.id, `${sIdx}-${rIdx}-${setIdx}-${w}-wt`);
           const savedReps = localStorage.getItem(repsKey);
           const savedWt = localStorage.getItem(wtKey);
           cells += `<td><input class="log reps" data-key="${repsKey}" value="${savedReps !== null ? savedReps : target}"></td>`;
@@ -327,12 +412,9 @@ function attachPersistence(container) {
 }
 
 function render() {
-  const warmupEl = document.getElementById("warmup-container");
-  const tableEl = document.getElementById("table-container");
-  warmupEl.innerHTML = "";
-  tableEl.innerHTML = "";
-  warmupEl.appendChild(buildWarmup());
-  tableEl.appendChild(buildTable());
+  document.getElementById("tabs").innerHTML = "";
+  document.getElementById("panels").innerHTML = "";
+  buildTabs();
 }
 
 document.getElementById("who-select").addEventListener("change", render);
